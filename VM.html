@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM Authentication: Complete Guide - SSH Keys, Identity & Azure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --azure-blue: #0078d4;
+            --azure-light: #50e6ff;
+            --azure-dark: #003d5c;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --purple: #a78bfa;
+            --dark: #1a1a2e;
+            --darker: #0f0f1e;
+            --light: #f0f4f8;
+            --orange: #fb923c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+            color: var(--light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, var(--azure-blue), var(--azure-dark));
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="2" fill="white" opacity="0.1"/></svg>');
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            from { transform: translate(0, 0); }
+            to { transform: translate(100px, 100px); }
+        }
+
+        h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        nav {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 2px solid var(--azure-blue);
+        }
+
+        .nav-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: var(--light);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .nav-btn:hover {
+            background: var(--azure-blue);
+            transform: translateY(-2px);
+        }
+
+        .section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 40px;
+            margin: 30px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: fadeIn 0.6s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 2.5em;
+            margin-bottom: 25px;
+            color: var(--azure-light);
+            border-bottom: 3px solid var(--azure-blue);
+            padding-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 1.8em;
+            margin: 30px 0 20px;
+            color: var(--success);
+        }
+
+        h4 {
+            font-size: 1.3em;
+            margin: 20px 0 10px;
+            color: var(--warning);
+        }
+
+        .layman-box {
+            background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(74, 222, 128, 0.05));
+            border-left: 5px solid var(--success);
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .layman-box::before {
+            content: "💡 In Simple Terms";
+            display: block;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: var(--success);
+        }
+
+        .azure-box {
+            background: linear-gradient(135deg, rgba(0, 120, 212, 0.1), rgba(0, 120, 212, 0.05));
+            border-left: 5px solid var(--azure-blue);
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .azure-box::before {
+            content: "☁️ Azure Specific";
+            display: block;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: var(--azure-light);
+        }
+
+        .diagram-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 25px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .flow-box {
+            background: linear-gradient(135deg, var(--azure-blue), var(--azure-dark));
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 250px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            animation: slideIn 0.5s;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .flow-arrow {
+            font-size: 2em;
+            color: var(--azure-light);
+        }
+
+        .horizontal-flow {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .horizontal-arrow {
+            font-size: 2em;
+            color: var(--azure-light);
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            border-left: 4px solid var(--azure-blue);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            position: relative;
+        }
+
+        .code-block::before {
+            content: 'Terminal';
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 0.8em;
+            color: var(--azure-light);
+            opacity: 0.6;
+        }
+
+        .code-line {
+            margin: 5px 0;
+            color: #d4d4d4;
+        }
+
+        .command {
+            color: var(--success);
+        }
+
+        .comment {
+            color: var(--warning);
+            font-style: italic;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .comparison-card {
+            background: rgba(255,255,255,0.05);
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+
+        .comparison-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .comparison-card.good {
+            border-color: var(--success);
+        }
+
+        .comparison-card.bad {
+            border-color: var(--danger);
+        }
+
+        .comparison-card.neutral {
+            border-color: var(--warning);
+        }
+
+        .card-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 25px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background: var(--azure-blue);
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .key-visual {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .key-item {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            min-width: 200px;
+        }
+
+        .key-icon {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        .badge.security-high {
+            background: var(--success);
+            color: var(--darker);
+        }
+
+        .badge.security-medium {
+            background: var(--warning);
+            color: var(--darker);
+        }
+
+        .badge.security-low {
+            background: var(--danger);
+            color: white;
+        }
+
+        .badge.modern {
+            background: var(--azure-blue);
+            color: white;
+        }
+
+        .badge.legacy {
+            background: var(--purple);
+            color: white;
+        }
+
+        .process-timeline {
+            position: relative;
+            padding: 30px 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: flex-start;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .timeline-number {
+            background: var(--azure-blue);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5em;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(251, 191, 36, 0.05));
+            border: 2px solid var(--warning);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .warning-box::before {
+            content: "⚠️ Important";
+            display: block;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: var(--warning);
+        }
+
+        .danger-box {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.2), rgba(248, 113, 113, 0.05));
+            border: 2px solid var(--danger);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .danger-box::before {
+            content: "🚨 Security Alert";
+            display: block;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: var(--danger);
+        }
+
+        .accordion {
+            margin: 20px 0;
+        }
+
+        .accordion-item {
+            background: rgba(255,255,255,0.05);
+            margin: 10px 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            padding: 20px;
+            cursor: pointer;
+            background: rgba(0, 120, 212, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .accordion-header:hover {
+            background: rgba(0, 120, 212, 0.3);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            padding: 0 20px;
+        }
+
+        .accordion-item.active .accordion-content {
+            max-height: 2000px;
+            padding: 20px;
+        }
+
+        .accordion-icon {
+            transition: transform 0.3s;
+        }
+
+        .accordion-item.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0,0,0,0.3);
+            margin-top: 50px;
+        }
+
+        .scroll-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--azure-blue);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s;
+            font-size: 1.5em;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .scroll-top.visible {
+            opacity: 1;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-5px);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2em; }
+            h2 { font-size: 1.8em; }
+            .nav-container { flex-direction: column; }
+            .key-visual { flex-direction: column; }
+            .horizontal-flow { flex-direction: column; }
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, var(--azure-blue), var(--azure-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-icon">🔐</div>
+        <h1>VM Authentication Guide</h1>
+        <p class="subtitle">SSH Keys, Identity Systems, and Azure Security – From Basics to Cloud-Native</p>
+    </header>
+
+    <nav>
+        <div class="nav-container">
+            <a href="#intro" class="nav-btn">Introduction</a>
+            <a href="#ssh-basics" class="nav-btn">SSH Keys Basics</a>
+            <a href="#authentication" class="nav-btn">Authentication Methods</a>
+            <a href="#lost-keys" class="nav-btn">Lost Keys Recovery</a>
+            <a href="#identity" class="nav-btn">Identity-Based Auth</a>
+            <a href="#certificates" class="nav-btn">Ephemeral Certificates</a>
+            <a href="#azure-deep" class="nav-btn">Azure Deep Dive</a>
+            <a href="#vm-agent" class="nav-btn">VM Agent</a>
+            <a href="#images" class="nav-btn">VM Images</a>
+            <a href="#best-practices" class="nav-btn">Best Practices</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Introduction Section -->
+        <section id="intro" class="section">
+            <h2>🎯 Introduction: The Door to Your Cloud Computer</h2>
+            
+            <div class="layman-box">
+                <p><strong>Imagine this scenario:</strong></p>
+                <p>You have a computer sitting in Microsoft's data center. You're sitting at home. You need to access it securely across the internet. How do you prove you're allowed in?</p>
+                <p style="margin-top: 15px;">That's what VM authentication is all about – <strong>proving you are who you say you are</strong> before getting access to a virtual server.</p>
+            </div>
+
+            <h3>Why This Matters</h3>
+            <div class="comparison-grid">
+                <div class="comparison-card good">
+                    <div class="card-icon">✅</div>
+                    <h4>Good Authentication</h4>
+                    <ul>
+                        <li>Only authorized users get in</li>
+                        <li>Audit trail of who accessed what</li>
+                        <li>Can revoke access instantly</li>
+                        <li>Protects sensitive data</li>
+                    </ul>
+                </div>
+                <div class="comparison-card bad">
+                    <div class="card-icon">❌</div>
+                    <h4>Bad Authentication</h4>
+                    <ul>
+                        <li>Unauthorized access</li>
+                        <li>Data breaches</li>
+                        <li>Ransomware attacks</li>
+                        <li>Compliance violations</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>The Evolution of VM Access</h3>
+            <div class="diagram-container">
+                <div class="process-timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-number">1</div>
+                        <div class="timeline-content">
+                            <h4>1990s: Passwords</h4>
+                            <p>Simple username + password. Easy to crack, reuse, and steal.</p>
+                            <span class="badge security-low">Security: Low</span>
+                            <span class="badge legacy">Legacy</span>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-number">2</div>
+                        <div class="timeline-content">
+                            <h4>2000s: SSH Keys</h4>
+                            <p>Public-key cryptography. Much stronger, but key management becomes complex.</p>
+                            <span class="badge security-high">Security: High</span>
+                            <span class="badge modern">Current Standard</span>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-number">3</div>
+                        <div class="timeline-content">
+                            <h4>2010s: Identity-Based SSH</h4>
+                            <p>Use corporate identity instead of keys. Centralized control via Azure AD / Entra ID.</p>
+                            <span class="badge security-high">Security: Very High</span>
+                            <span class="badge modern">Modern</span>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-number">4</div>
+                        <div class="timeline-content">
+                            <h4>2020s: Ephemeral Certificates</h4>
+                            <p>Short-lived credentials that expire in minutes. Zero standing privileges.</p>
+                            <span class="badge security-high">Security: Highest</span>
+                            <span class="badge modern">Cloud-Native</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SSH Basics Section -->
+        <section id="ssh-basics" class="section">
+            <h2>🔑 SSH Keys Explained (Layman Terms)</h2>
+            
+            <div class="layman-box">
+                <h3>The Lock and Key Analogy</h3>
+                <p><strong>Imagine two special keys:</strong></p>
+                <ul>
+                    <li><strong>🔓 Public Key</strong> = A special lock you put on your server</li>
+                    <li><strong>🔐 Private Key</strong> = The only key that can open that lock (stays with you)</li>
+                </ul>
+                <p style="margin-top: 15px;">Anyone can have the public key (the lock), but only someone with the matching private key can open it.</p>
+            </div>
+
+            <h3>The Magic of Public-Key Cryptography</h3>
+            <div class="diagram-container">
+                <div class="key-visual">
+                    <div class="key-item">
+                        <div class="key-icon">🔐</div>
+                        <h4>Private Key</h4>
+                        <p>Stays on YOUR computer</p>
+                        <p style="color: var(--danger); margin-top: 10px;">⚠️ NEVER share this</p>
+                    </div>
+                    <div class="key-icon" style="font-size: 3em;">➡️</div>
+                    <div class="key-item">
+                        <div class="key-icon">🔓</div>
+                        <h4>Public Key</h4>
+                        <p>Lives on the VM</p>
+                        <p style="color: var(--success); margin-top: 10px;">✅ Safe to share</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>How SSH Login Works (Step by Step)</h3>
+            <div class="diagram-container">
+                <div class="flow-diagram">
+                    <div class="flow-box">👨‍💻 You type: ssh azureuser@myvm.com</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">🖥️ VM says: "Prove you own the private key!"</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">🔐 Your computer signs a challenge with private key</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">🔓 VM verifies signature with public key</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">✅ Access Granted!</div>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <strong>The Beautiful Security Trick:</strong> Your private key NEVER leaves your computer. The VM never sees it. You prove ownership without revealing the secret.
+            </div>
+
+            <h3>Creating SSH Keys</h3>
+            <div class="code-block">
+                <div class="code-line"><span class="comment"># Generate new SSH key pair</span></div>
+                <div class="code-line"><span class="command">ssh-keygen -t rsa -b 4096 -C "your_email@example.com"</span></div>
+                <div class="code-line"></div>
+                <div class="code-line"><span class="comment"># This creates two files:</span></div>
+                <div class="code-line">~/.ssh/id_rsa        <span class="comment"># Private key (keep secret!)</span></div>
+                <div class="code-line">~/.ssh/id_rsa.pub    <span class="comment"># Public key (share this)</span></div>
+            </div>
+
+            <h3>SSH Key Formats</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>Command</th>
+                            <th>Key Size</th>
+                            <th>Security</th>
+                            <th>Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>RSA</strong></td>
+                            <td><code>ssh-keygen -t rsa -b 4096</code></td>
+                            <td>2048-4096 bits</td>
+                            <td><span class="badge security-high">High</span></td>
+                            <td>Most common, widely supported</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ed25519</strong></td>
+                            <td><code>ssh-keygen -t ed25519</code></td>
+                            <td>256 bits</td>
+                            <td><span class="badge security-high">Very High</span></td>
+                            <td>Modern, faster, smaller keys</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ECDSA</strong></td>
+                            <td><code>ssh-keygen -t ecdsa -b 521</code></td>
+                            <td>256-521 bits</td>
+                            <td><span class="badge security-high">High</span></td>
+                            <td>Elliptic curve, good performance</td>
+                        </tr>
+                        <tr>
+                            <td><strong>DSA</strong></td>
+                            <td><code>ssh-keygen -t dsa</code></td>
+                            <td>1024 bits</td>
+                            <td><span class="badge security-low">Deprecated</span></td>
+                            <td>⚠️ Don't use (weak)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="azure-box">
+                <h4>Azure Recommendation</h4>
+                <p>Azure supports all modern SSH key formats. Recommended order:</p>
+                <ol>
+                    <li><strong>Ed25519</strong> - If all your systems support it (best choice)</li>
+                    <li><strong>RSA 4096</strong> - Maximum compatibility with high security</li>
+                    <li><strong>ECDSA</strong> - Good alternative if Ed25519 not available</li>
+                </ol>
+            </div>
+
+            <h3>Where Keys Live on Linux</h3>
+            <div class="code-block">
+                <div class="code-line"><span class="comment"># Your private key (on your laptop)</span></div>
+                <div class="code-line">~/.ssh/id_rsa</div>
+                <div class="code-line"></div>
+                <div class="code-line"><span class="comment"># Allowed public keys (on the VM)</span></div>
+                <div class="code-line">/home/azureuser/.ssh/authorized_keys</div>
+                <div class="code-line"></div>
+                <div class="code-line"><span class="comment"># Example content of authorized_keys:</span></div>
+                <div class="code-line">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... user@laptop</div>
+            </div>
+        </section>
+
+        <!-- Authentication Methods Section -->
+        <section id="authentication" class="section">
+            <h2>🛡️ VM Authentication Methods</h2>
+            
+            <div class="layman-box">
+                <p>Think of authentication methods as different ways to prove your identity at an airport:</p>
+                <ul>
+                    <li><strong>Password</strong> = Verbal confirmation (weak)</li>
+                    <li><strong>SSH Key</strong> = Passport with photo (strong)</li>
+                    <li><strong>Identity Login</strong> = Biometric scan linked to government database (strongest)</li>
+                    <li><strong>Certificate</strong> = Temporary boarding pass that expires (modern)</li>
+                </ul>
+            </div>
+
+            <h3>Method Comparison</h3>
+            <div class="comparison-grid">
+                <div class="comparison-card neutral">
+                    <div class="card-icon">🔤</div>
+                    <h4>Password Authentication</h4>
+                    <span class="badge security-low">Security: Low</span>
+                    <span class="badge legacy">Legacy</span>
+                    <p style="margin-top: 15px;"><strong>How it works:</strong> Type username and password</p>
+                    <p><strong>Pros:</strong> Simple, familiar</p>
+                    <p><strong>Cons:</strong> Brute-force attacks, can be stolen, reused</p>
+                </div>
+
+                <div class="comparison-card good">
+                    <div class="card-icon">🔑</div>
+                    <h4>SSH Key Authentication</h4>
+                    <span class="badge security-high">Security: High</span>
+                    <span class="badge modern">Standard</span>
+                    <p style="margin-top: 15px;"><strong>How it works:</strong> Cryptographic key pair</p>
+                    <p><strong>Pros:</strong> Very secure, no password needed</p>
+                    <p><strong>Cons:</strong> Key management, if lost need recovery</p>
+                </div>
+
+                <div class="comparison-card good">
+                    <div class="card-icon">👤</div>
+                    <h4>Identity-Based (Azure AD)</h4>
+                    <span class="badge security-high">Security: Very High</span>
+                    <span class="badge modern">Modern</span>
+                    <p style="margin-top: 15px;"><strong>How it works:</strong> Corporate identity + token</p>
+                    <p><strong>Pros:</strong> Centralized, MFA, auditing, instant revocation</p>
+                    <p><strong>Cons:</strong> Requires Azure AD, setup complexity</p>
+                </div>
+
+                <div class="comparison-card good">
+                    <div class="card-icon">⏱️</div>
+                    <h4>Ephemeral Certificates</h4>
+                    <span class="badge security-high">Security: Highest</span>
+                    <span class="badge modern">Cloud-Native</span>
+                    <p style="margin-top: 15px;"><strong>How it works:</strong> Short-lived (~5 min) credentials</p>
+                    <p><strong>Pros:</strong> Zero standing privileges, auto-expire</p>
+                    <p><strong>Cons:</strong> Requires certificate infrastructure</p>
+                </div>
+            </div>
+
+            <h3>Authentication Flow Comparison</h3>
+            <div class="accordion">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🔤 Password Authentication Flow</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="diagram-container">
+                            <div class="flow-diagram">
+                                <div class="flow-box">User enters: ssh user@vm</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">Prompted: "Password:"</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">User types password</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">VM checks against /etc/shadow</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">✅ or ❌</div>
+                            </div>
+                        </div>
+                        <div class="danger-box">
+                            Password travels over network (even if encrypted). Can be brute-forced. Often disabled in production.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>🔑 SSH Key Authentication Flow</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="diagram-container">
+                            <div class="flow-diagram">
+                                <div class="flow-box">User: ssh -i ~/.ssh/id_rsa user@vm</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">VM: "I trust public key XYZ, prove you have private key"</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">Client signs challenge with private key</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">VM verifies signature with public key</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">✅ Private key never transmitted!</div>
+                            </div>
+                        </div>
+                        <div class="layman-box">
+                            Like proving you own a house by using your key to unlock the door – you don't hand over the key, you just demonstrate it works.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>👤 Identity-Based Authentication Flow</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="diagram-container">
+                            <div class="flow-diagram">
+                                <div class="flow-box">User: az login (authenticate to Azure AD)</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">Azure AD: MFA + identity verification</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">User: az ssh vm --name myvm</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">Azure issues OAuth token</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">VM Extension validates token</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">✅ Access granted based on RBAC role</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Lost Keys Recovery Section -->
+        <section id="lost-keys" class="section">
+            <h2>🆘 What Happens When SSH Keys Are Lost?</h2>
+            
+            <div class="layman-box">
+                <h3>The Problem</h3>
+                <p>Imagine you lost your house key, but a copy is still in the lock. The house "trusts" that key, but you no longer have it. You need a way to add a NEW key to the lock.</p>
+                <p style="margin-top: 15px;">With VMs, the server has a public key it trusts, but your private key is gone. You can't authenticate anymore. Now what?</p>
+            </div>
+
+            <div class="danger-box">
+                <strong>Important:</strong> The private key never existed on the VM, so there's no way to "recover" it. You must inject a NEW public key using an alternative access method.
+            </div>
+
+            <h3>Recovery Methods</h3>
+            <div class="accordion">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Method 1: Azure Portal Reset (Easiest)</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="azure-box">
+                            <h4>How Azure Portal Reset Works</h4>
+                            <div class="diagram-container">
+                                <div class="flow-diagram">
+                                    <div class="flow-box">Navigate to VM in Azure Portal</div>
+                                    <div class="flow-arrow">⬇️</div>
+                                    <div class="flow-box">Click "Reset Password"</div>
+                                    <div class="flow-arrow">⬇️</div>
+                                    <div class="flow-box">Choose "Reset SSH public key"</div>
+                                    <div class="flow-arrow">⬇️</div>
+                                    <div class="flow-box">Paste NEW public key</div>
+                                    <div class="flow-arrow">⬇️</div>
+                                    <div class="flow-box">Azure VM Agent writes to ~/.ssh/authorized_keys</div>
+                                    <div class="flow-arrow">⬇️</div>
+                                    <div class="flow-box">✅ Can now login with new private key!</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-line"><span class="comment"># Step 1: Generate new key pair on your laptop</span></div>
+                            <div class="code-line"><span class="command">ssh-keygen -t ed25519 -f ~/.ssh/azure_recovery</span></div>
+                            <div class="code-line"></div>
+                            <div class="code-line"><span class="comment"># Step 2: Copy the public key</span></div>
+                            <div class="code-line"><span class="command">cat ~/.ssh/azure_recovery.pub</span></div>
+                            <div class="code-line"></div>
+                            <div class="code-line"><span class="comment"># Step 3: Paste into Azure Portal reset form</span></div>
+                            <div class="code-line"></div>
+                            <div class="code-line"><span class="comment"># Step 4: Try login</span></div>
+                            <div class="code-line"><span class="command">ssh -i ~/.ssh/azure_recovery azureuser@myvm.azure.com</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Method 2: Azure CLI Reset</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="code-block">
+                            <div class="code-line"><span class="comment"># Reset SSH key via Azure CLI</span></div>
+                            <div class="code-line"><span class="command">az vm user update \</span></div>
+                            <div class="code-line">  --resource-group myResourceGroup \</div>
+                            <div class="code-line">  --name myVM \</div>
+                            <div class="code-line">  --username azureuser \</div>
+                            <div class="code-line">  --ssh-key-value "$(cat ~/.ssh/newkey.pub)"</div>
+                        </div>
+                        <p style="margin-top: 15px;">This does the same thing as portal method, but through CLI. The Azure VM Agent receives the command and updates the authorized_keys file.</p>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Method 3: Serial Console Access (Break Glass)</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="layman-box">
+                            Serial Console is like plugging a keyboard and monitor directly into a physical server. It bypasses the network entirely and gives you direct access to the Linux terminal.
+                        </div>
+
+                        <div class="azure-box">
+                            <h4>Enable Serial Console</h4>
+                            <ol>
+                                <li>Go to VM in Azure Portal</li>
+                                <li>Select "Serial Console" from left menu</li>
+                                <li>Login with username/password (if configured)</li>
+                                <li>Manually edit authorized_keys file</li>
+                            </ol>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-line"><span class="comment"># Once in serial console:</span></div>
+                            <div class="code-line"><span class="command">cd ~/.ssh</span></div>
+                            <div class="code-line"><span class="command">nano authorized_keys</span></div>
+                            <div class="code-line"></div>
+                            <div class="code-line"><span class="comment"># Add your new public key, save and exit</span></div>
+                        </div>
+
+                        <div class="warning-box">
+                            Serial Console requires that you enabled password authentication OR boot diagnostics. If both SSH keys are lost AND password auth is disabled, this won't work.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Method 4: Disk Surgery (Advanced)</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="layman-box">
+                            Think of this like removing a hard drive from a broken computer, plugging it into another computer, fixing the files, then putting it back. It's invasive but works when nothing else does.
+                        </div>
+
+                        <div class="process-timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-number">1</div>
+                                <div class="timeline-content">
+                                    <h4>Stop the VM</h4>
+                                    <p>Deallocate the broken VM in Azure Portal</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-number">2</div>
+                                <div class="timeline-content">
+                                    <h4>Detach OS Disk</h4>
+                                    <p>Remove the OS disk from the VM</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-number">3</div>
+                                <div class="timeline-content">
+                                    <h4>Attach to Recovery VM</h4>
+                                    <p>Attach the disk to a different working VM as a data disk</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-number">4</div>
+                                <div class="timeline-content">
+                                    <h4>Mount and Fix</h4>
+                                    <p>Mount the disk, navigate to authorized_keys, add new key</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-number">5</div>
+                                <div class="timeline-content">
+                                    <h4>Reattach and Start</h4>
+                                    <p>Unmount, detach, reattach to original VM, start VM</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-line"><span class="comment"># On the recovery VM, after attaching disk:</span></div>
+                            <div class="code-line"><span class="command">sudo mkdir /mnt/broken-vm</span></div>
+                            <div class="code-line"><span class="command">sudo mount /dev/sdc1 /mnt/broken-vm</span></div>
+                            <div class="code-line"></div>
+                            <div class="code-line"><span class="comment"># Edit the authorized_keys file</span></div>
+                            <div class="code-line"><span class="command">sudo nano /mnt/broken-vm/home/azureuser/.ssh/authorized_keys</span></div>
+                            <div class="code-line"></div>
+                            <div class="code-line"><span class="comment"># Add new public key, save, unmount</span></div>
+                            <div class="code-line"><span class="command">sudo umount /mnt/broken-vm</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Method 5: Rebuild from Image (Cloud-Native)</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="layman-box">
+                            <h4>The Modern Philosophy: Cattle, Not Pets</h4>
+                            <p>Instead of trying to "fix" a broken server, just replace it with a fresh one from a template.</p>
+                        </div>
+
+                        <div class="diagram-container">
+                            <div class="flow-diagram">
+                                <div class="flow-box">❌ VM with lost keys</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">🗑️ Terminate VM</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">📦 Create new VM from golden image</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">🔑 Inject new SSH keys during creation</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">✅ Fresh VM, properly configured</div>
+                            </div>
+                        </div>
+
+                        <p style="margin-top: 20px;"><strong>Why this is better:</strong></p>
+                        <ul>
+                            <li>Faster than troubleshooting</li>
+                            <li>Guaranteed clean state</li>
+                            <li>No accumulated configuration drift</li>
+                            <li>Infrastructure as Code approach</li>
+                        </ul>
+
+                        <div class="warning-box">
+                            This only works if you've properly designed for immutable infrastructure – data on external volumes, configuration in code, etc.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Identity-Based Auth Section -->
+        <section id="identity" class="section">
+            <h2>👤 Identity-Based SSH (Modern Approach)</h2>
+            
+            <div class="layman-box">
+                <h3>The Problem with SSH Keys at Scale</h3>
+                <p>Imagine a company with:</p>
+                <ul>
+                    <li>500 employees</li>
+                    <li>1000 virtual machines</li>
+                    <li>Each person needs access to ~20 VMs</li>
+                </ul>
+                <p style="margin-top: 15px;">That's potentially 10,000 SSH keys to manage! When someone leaves the company, you need to remove their key from all VMs. When someone's laptop is stolen, panic ensues.</p>
+                <p style="margin-top: 15px;"><strong>Solution:</strong> Use corporate identity instead of managing individual keys.</p>
+            </div>
+
+            <h3>How Identity-Based SSH Works</h3>
+            <div class="diagram-container">
+                <div class="horizontal-flow">
+                    <div class="flow-box">👨‍💼 Employee</div>
+                    <div class="horizontal-arrow">→</div>
+                    <div class="flow-box">🏢 Azure AD / Entra ID</div>
+                    <div class="horizontal-arrow">→</div>
+                    <div class="flow-box">🎫 OAuth Token</div>
+                    <div class="horizontal-arrow">→</div>
+                    <div class="flow-box">🖥️ VM</div>
+                </div>
+            </div>
+
+            <h3>The Flow in Detail</h3>
+            <div class="process-timeline">
+                <div class="timeline-item">
+                    <div class="timeline-number">1</div>
+                    <div class="timeline-content">
+                        <h4>Employee Logs Into Azure</h4>
+                        <div class="code-block">
+                            <div class="code-line"><span class="command">az login</span></div>
+                        </div>
+                        <p>Authenticates via browser with MFA (multi-factor authentication)</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">2</div>
+                    <div class="timeline-content">
+                        <h4>Azure AD Issues Identity Token</h4>
+                        <p>Token contains: user identity, roles, permissions, expiration time</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">3</div>
+                    <div class="timeline-content">
+                        <h4>Request SSH Access</h4>
+                        <div class="code-block">
+                            <div class="code-line"><span class="command">az ssh vm --name myVM --resource-group myRG</span></div>
+                        </div>
+                        <p>Azure CLI sends token to VM</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">4</div>
+                    <div class="timeline-content">
+                        <h4>VM Validates Token</h4>
+                        <p>Azure VM Login Extension verifies:</p>
+                        <ul>
+                            <li>Token signature (is it really from Azure AD?)</li>
+                            <li>Token expiration (is it still valid?)</li>
+                            <li>User permissions (does RBAC allow this?)</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">5</div>
+                    <div class="timeline-content">
+                        <h4>Dynamic User Creation</h4>
+                        <p>VM dynamically maps identity to Linux user based on role:</p>
+                        <ul>
+                            <li><strong>Virtual Machine User Login</strong> → regular user</li>
+                            <li><strong>Virtual Machine Administrator Login</strong> → sudo access</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="azure-box">
+                <h4>Azure-Specific Implementation</h4>
+                <h5>Prerequisites:</h5>
+                <ol>
+                    <li>Install Azure AD Login Extension on VM</li>
+                    <li>Assign RBAC roles to users</li>
+                    <li>Enable Managed Identity on VM</li>
+                </ol>
+
+                <div class="code-block">
+                    <div class="code-line"><span class="comment"># Install AAD Login Extension</span></div>
+                    <div class="code-line"><span class="command">az vm extension set \</span></div>
+                    <div class="code-line">  --publisher Microsoft.Azure.ActiveDirectory \</div>
+                    <div class="code-line">  --name AADSSHLoginForLinux \</div>
+                    <div class="code-line">  --resource-group myRG \</div>
+                    <div class="code-line">  --vm-name myVM</div>
+                    <div class="code-line"></div>
+                    <div class="code-line"><span class="comment"># Assign RBAC role to user</span></div>
+                    <div class="code-line"><span class="command">az role assignment create \</span></div>
+                    <div class="code-line">  --role "Virtual Machine Administrator Login" \</div>
+                    <div class="code-line">  --assignee user@company.com \</div>
+                    <div class="code-line">  --scope /subscriptions/{sub-id}/resourceGroups/myRG/providers/Microsoft.Compute/virtualMachines/myVM</div>
+                </div>
+            </div>
+
+            <h3>Benefits of Identity-Based SSH</h3>
+            <div class="comparison-grid">
+                <div class="comparison-card good">
+                    <div class="card-icon">🎯</div>
+                    <h4>Centralized Control</h4>
+                    <p>All access controlled from single identity system. Disable user in Azure AD = instant loss of all VM access.</p>
+                </div>
+                <div class="comparison-card good">
+                    <div class="card-icon">📋</div>
+                    <h4>Audit Trail</h4>
+                    <p>Every login tied to real identity. Know exactly who accessed what and when.</p>
+                </div>
+                <div class="comparison-card good">
+                    <div class="card-icon">🔐</div>
+                    <h4>MFA Enforcement</h4>
+                    <p>Leverage conditional access policies. Require MFA, device compliance, IP restrictions.</p>
+                </div>
+                <div class="comparison-card good">
+                    <div class="card-icon">🚀</div>
+                    <h4>Zero Key Management</h4>
+                    <p>No SSH keys to distribute, rotate, or revoke. Identity system handles everything.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Ephemeral Certificates Section -->
+        <section id="certificates" class="section">
+            <h2>⏱️ Ephemeral SSH Certificates (Cloud-Native)</h2>
+            
+            <div class="layman-box">
+                <h3>The Boarding Pass Analogy</h3>
+                <p>Think about airport security:</p>
+                <ul>
+                    <li><strong>Old way (SSH Keys):</strong> You get a permanent "VIP pass" that works forever. If someone steals it, they have unlimited access.</li>
+                    <li><strong>New way (Certificates):</strong> You get a temporary boarding pass valid for ONE flight. After that, it's useless.</li>
+                </ul>
+                <p style="margin-top: 15px;">Ephemeral certificates are like those temporary boarding passes – they expire quickly, so even if stolen, they become worthless within minutes.</p>
+            </div>
+
+            <h3>How SSH Certificates Differ from Keys</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>SSH Keys</th>
+                            <th>SSH Certificates</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Lifespan</strong></td>
+                            <td>Forever (until manually removed)</td>
+                            <td>Minutes to hours (auto-expire)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Management</strong></td>
+                            <td>Each VM stores authorized_keys</td>
+                            <td>VMs trust one Certificate Authority</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Revocation</strong></td>
+                            <td>Must manually remove from all VMs</td>
+                            <td>Automatic (certificate expires)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Stolen Credential Risk</strong></td>
+                            <td>High (permanent access)</td>
+                            <td>Low (access expires quickly)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Best For</strong></td>
+                            <td>Small deployments, personal use</td>
+                            <td>Enterprise, large-scale, high-security</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Certificate-Based SSH Architecture</h3>
+            <div class="diagram-container">
+                <div class="flow-diagram">
+                    <div class="flow-box">👨‍💻 Engineer requests access</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">🏢 Authenticate to Identity Provider (SSO + MFA)</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">🎫 Certificate Authority signs temporary certificate<br>(valid for 5-15 minutes)</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">🔐 Certificate contains: identity, permissions, expiration</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">🖥️ Present certificate to VM</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">✅ VM validates CA signature + checks expiration</div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">🚪 Access granted (for remaining time)</div>
+                </div>
+            </div>
+
+            <h3>How Certificate Validation Works</h3>
+            <div class="layman-box">
+                <p><strong>The Trust Model:</strong></p>
+                <p>Instead of each VM trusting 100 different user keys, each VM trusts ONE Certificate Authority (CA).</p>
+                <p style="margin-top: 15px;">Think of it like a government issuing passports. Border control doesn't need to know every citizen – they just trust any passport signed by their government.</p>
+            </div>
+
+            <div class="diagram-container">
+                <h4 style="text-align: center; margin-bottom: 20px;">Old Way: VMs Trust Individual Keys</h4>
+                <div class="key-visual">
+                    <div class="key-item">
+                        <div style="font-size: 2em;">🖥️ VM</div>
+                        <p style="margin-top: 10px;">Trusts:</p>
+                        <div style="font-size: 1.2em; margin-top: 10px;">
+                            🔑 Alice<br>
+                            🔑 Bob<br>
+                            🔑 Carol<br>
+                            🔑 Dave<br>
+                            🔑 ...100 more
+                        </div>
+                    </div>
+                </div>
+
+                <h4 style="text-align: center; margin: 30px 0 20px;">New Way: VMs Trust One CA</h4>
+                <div class="key-visual">
+                    <div class="key-item">
+                        <div style="font-size: 2em;">🖥️ VM</div>
+                        <p style="margin-top: 10px;">Trusts:</p>
+                        <div style="font-size: 2em; margin-top: 10px;">
+                            🏢 CA Only
+                        </div>
+                    </div>
+                    <div style="font-size: 3em;">→</div>
+                    <div class="key-item">
+                        <div style="font-size: 2em;">🏢 CA</div>
+                        <p style="margin-top: 10px;">Signs certificates for:</p>
+                        <div style="font-size: 1.2em; margin-top: 10px;">
+                            ✅ Alice (5 min)<br>
+                            ✅ Bob (10 min)<br>
+                            ✅ Carol (5 min)<br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Certificate Lifecycle</h3>
+            <div class="process-timeline">
+                <div class="timeline-item">
+                    <div class="timeline-number">1</div>
+                    <div class="timeline-content">
+                        <h4>Request Time: 0 minutes</h4>
+                        <p>Engineer authenticates with identity provider, CA issues certificate valid for 10 minutes</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">2</div>
+                    <div class="timeline-content">
+                        <h4>Minutes 0-10: Certificate Valid</h4>
+                        <p>Engineer can SSH to any VM. Each VM validates the certificate signature and checks expiration time.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">3</div>
+                    <div class="timeline-content">
+                        <h4>Minute 10: Certificate Expires</h4>
+                        <p>Certificate becomes invalid. Access automatically denied. No manual revocation needed.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">4</div>
+                    <div class="timeline-content">
+                        <h4>Need More Access?</h4>
+                        <p>Request new certificate (re-authenticate if needed). Fresh 10-minute window.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Popular Certificate Systems</h3>
+            <div class="comparison-grid">
+                <div class="comparison-card good">
+                    <div class="card-icon">🔐</div>
+                    <h4>HashiCorp Vault</h4>
+                    <p>Enterprise secret management with SSH certificate engine</p>
+                    <span class="badge modern">Popular</span>
+                </div>
+                <div class="comparison-card good">
+                    <div class="card-icon">🚀</div>
+                    <h4>Teleport</h4>
+                    <p>Access platform with certificate-based SSH, Kubernetes, databases</p>
+                    <span class="badge modern">Modern</span>
+                </div>
+                <div class="comparison-card good">
+                    <div class="card-icon">🔑</div>
+                    <h4>Okta Advanced Server Access</h4>
+                    <p>Identity-driven infrastructure access with certificates</p>
+                    <span class="badge modern">Enterprise</span>
+                </div>
+                <div class="comparison-card good">
+                    <div class="card-icon">☁️</div>
+                    <h4>Azure AD + Custom CA</h4>
+                    <p>Combine Azure identity with custom certificate authority</p>
+                    <span class="badge modern">Hybrid</span>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <strong>Implementation Complexity:</strong> Ephemeral certificates require infrastructure setup (CA, automation, integration). Best suited for:
+                <ul style="margin-top: 10px;">
+                    <li>Large enterprises (100+ VMs)</li>
+                    <li>High-security environments</li>
+                    <li>Compliance requirements (PCI-DSS, SOC2)</li>
+                    <li>Zero-trust architectures</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Azure Deep Dive Section -->
+        <section id="azure-deep" class="section">
+            <h2>☁️ Azure VM Authentication Deep Dive</h2>
+            
+            <h3>Azure Authentication Components</h3>
+            <div class="diagram-container">
+                <div class="horizontal-flow" style="flex-direction: column;">
+                    <div class="flow-box" style="background: linear-gradient(135deg, var(--azure-blue), var(--azure-dark)); width: 100%;">
+                        <strong>User Layer</strong><br>
+                        Engineers, Apps, Service Principals
+                    </div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box" style="background: linear-gradient(135deg, var(--purple), var(--azure-dark)); width: 100%;">
+                        <strong>Identity Layer</strong><br>
+                        Azure AD / Entra ID, RBAC, Managed Identities
+                    </div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box" style="background: linear-gradient(135deg, var(--success), var(--azure-dark)); width: 100%;">
+                        <strong>Network Layer</strong><br>
+                        VNet, NSG, Bastion, Private Endpoints
+                    </div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box" style="background: linear-gradient(135deg, var(--warning), var(--azure-dark)); width: 100%;">
+                        <strong>VM Layer</strong><br>
+                        VM Agent, Extensions, OS Authentication
+                    </div>
+                </div>
+            </div>
+
+            <h3>Azure-Specific Authentication Methods</h3>
+            <div class="accordion">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>1. Azure Portal SSH (Browser-Based)</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="azure-box">
+                            <p>Newest method – SSH directly from browser without any client software!</p>
+                            <h4>How it works:</h4>
+                            <ol>
+                                <li>Navigate to VM in Azure Portal</li>
+                                <li>Click "Connect" → "SSH"</li>
+                                <li>Choose authentication (key or Azure AD)</li>
+                                <li>Terminal opens in browser</li>
+                            </ol>
+                        </div>
+                        <div class="layman-box">
+                            No need to install SSH client, manage keys, or know IP addresses. Everything happens through the browser. Azure handles authentication and routing.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>2. Azure CLI SSH</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="code-block">
+                            <div class="code-line"><span class="comment"># SSH using Azure AD authentication</span></div>
+                            <div class="code-line"><span class="command">az ssh vm --name myVM --resource-group myRG</span></div>
+                            <div class="code-line"></div>
+                            <div class="code-line"><span class="comment"># SSH using local SSH key</span></div>
+                            <div class="code-line"><span class="command">az ssh vm --name myVM --resource-group myRG --local-user azureuser</span></div>
+                            <div class="code-line"></div>
+                            <div class="code-line"><span class="comment"># SSH through Azure Bastion</span></div>
+                            <div class="code-line"><span class="command">az network bastion ssh --name myBastion --resource-group myRG \</span></div>
+                            <div class="code-line">  --target-resource-id /subscriptions/.../myVM --auth-type AAD</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>3. Azure Bastion (Zero Public IP)</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="layman-box">
+                            <h4>What is Azure Bastion?</h4>
+                            <p>Imagine a heavily guarded entry gate to your private network. You connect to the gate (which is public), and the gate provides secure access to your private VMs (which have no public IP).</p>
+                        </div>
+
+                        <div class="diagram-container">
+                            <h4 style="text-align: center; margin-bottom: 20px;">Without Bastion (Risky)</h4>
+                            <div class="flow-diagram">
+                                <div class="flow-box">🌐 Internet</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box" style="border: 3px solid var(--danger);">🖥️ VM with Public IP<br>(Directly exposed)</div>
+                            </div>
+
+                            <h4 style="text-align: center; margin: 30px 0 20px;">With Bastion (Secure)</h4>
+                            <div class="flow-diagram">
+                                <div class="flow-box">🌐 Internet</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box" style="border: 3px solid var(--success);">🛡️ Azure Bastion<br>(Hardened gateway)</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">🔒 Private VNet</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">🖥️ VM (No public IP)</div>
+                            </div>
+                        </div>
+
+                        <div class="azure-box">
+                            <h4>Bastion Features</h4>
+                            <ul>
+                                <li>VMs don't need public IPs</li>
+                                <li>No need to manage NSG rules for SSH/RDP</li>
+                                <li>SSL/TLS encrypted session through port 443</li>
+                                <li>Protection against port scanning</li>
+                                <li>Integrated with Azure AD</li>
+                                <li>Session recording available</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>4. Just-In-Time (JIT) VM Access</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="layman-box">
+                            <p>Imagine SSH port is normally LOCKED. When you need access, you request permission. The system temporarily unlocks it for you (e.g., 3 hours), then automatically locks it again.</p>
+                        </div>
+
+                        <div class="diagram-container">
+                            <h4 style="text-align: center; margin-bottom: 20px;">JIT Access Flow</h4>
+                            <div class="flow-diagram">
+                                <div class="flow-box">Engineer needs VM access</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">Request JIT access (Security Center)</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">Azure verifies RBAC permissions</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">NSG rule added: Allow SSH from your IP for 3 hours</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">SSH access granted (time-limited)</div>
+                                <div class="flow-arrow">⬇️</div>
+                                <div class="flow-box">After 3 hours: NSG rule automatically removed</div>
+                            </div>
+                        </div>
+
+                        <div class="azure-box">
+                            <h4>Enabling JIT</h4>
+                            <p>Requires Microsoft Defender for Cloud (formerly Security Center)</p>
+                            <div class="code-block">
+                                <div class="code-line"><span class="comment"># Request JIT access via CLI</span></div>
+                                <div class="code-line"><span class="command">az security jit-policy create \</span></div>
+                                <div class="code-line">  --location eastus \</div>
+                                <div class="code-line">  --name JIT-Policy \</div>
+                                <div class="code-line">  --resource-group myRG \</div>
+                                <div class="code-line">  --virtual-machines "myVM"</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>5. Run Command (No SSH Needed)</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="layman-box">
+                            Sometimes you don't need a full SSH session – you just want to run ONE command. Run Command lets you do that through Azure, bypassing SSH entirely.
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-line"><span class="comment"># Execute single command on VM</span></div>
+                            <div class="code-line"><span class="command">az vm run-command invoke \</span></div>
+                            <div class="code-line">  --resource-group myRG \</div>
+                            <div class="code-line">  --name myVM \</div>
+                            <div class="code-line">  --command-id RunShellScript \</div>
+                            <div class="code-line">  --scripts "cat /etc/os-release"</div>
+                        </div>
+
+                        <div class="warning-box">
+                            Run Command uses the Azure VM Agent to execute commands. Useful for:
+                            <ul style="margin-top: 10px;">
+                                <li>Emergency access when SSH is broken</li>
+                                <li>Automation without SSH</li>
+                                <li>Quick diagnostics</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Azure RBAC Roles for VM Access</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Access Level</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Virtual Machine User Login</strong></td>
+                            <td>Regular user SSH access (no sudo)</td>
+                            <td>Developers who need to check logs, run apps</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Virtual Machine Administrator Login</strong></td>
+                            <td>Admin access with sudo privileges</td>
+                            <td>System administrators, DevOps engineers</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Virtual Machine Contributor</strong></td>
+                            <td>Manage VM (start/stop/config), but not access inside</td>
+                            <td>Platform teams managing infrastructure</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reader</strong></td>
+                            <td>View VM details, no changes or access</td>
+                            <td>Auditors, management visibility</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- VM Agent Section -->
+        <section id="vm-agent" class="section">
+            <h2>🤖 Azure VM Agent Explained</h2>
+            
+            <div class="layman-box">
+                <h3>The Secret Helper Inside Your VM</h3>
+                <p>Imagine you have a smart assistant living inside your VM that:</p>
+                <ul>
+                    <li>Talks to Azure control plane</li>
+                    <li>Installs software you request from Azure Portal</li>
+                    <li>Resets passwords when you're locked out</li>
+                    <li>Reports health status</li>
+                    <li>Executes commands sent from Azure</li>
+                </ul>
+                <p style="margin-top: 15px;">That's the <strong>Azure VM Agent</strong> – a small software service running inside every Azure VM.</p>
+            </div>
+
+            <h3>VM Agent Architecture</h3>
+            <div class="diagram-container">
+                <div class="horizontal-flow" style="flex-direction: column;">
+                    <div class="flow-box" style="width: 100%;">
+                        ☁️ Azure Control Plane<br>
+                        <span style="font-size: 0.9em;">(Portal, CLI, ARM API)</span>
+                    </div>
+                    <div class="flow-arrow">⬇️ Communication via wire protocol ⬇️</div>
+                    <div class="flow-box" style="width: 100%;">
+                        🤖 VM Agent<br>
+                        <span style="font-size: 0.9em;">(waagent / WindowsAzureGuestAgent)</span>
+                    </div>
+                    <div class="flow-arrow">⬇️ Controls ⬇️</div>
+                    <div class="flow-box" style="width: 100%;">
+                        🖥️ VM Components<br>
+                        <span style="font-size: 0.9em;">(OS, files, extensions, networking)</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3>What VM Agent Does</h3>
+            <div class="comparison-grid">
+                <div class="comparison-card good">
+                    <div class="card-icon">🔧</div>
+                    <h4>Extension Management</h4>
+                    <p>Installs and manages VM extensions (antivirus, monitoring, backup agents, etc.)</p>
+                </div>
+                <div class="comparison-card good">
+                    <div class="card-icon">🔐</div>
+                    <h4>Credential Management</h4>
+                    <p>Handles SSH key injection during VM creation and password resets</p>
+                </div>
+                <div class="comparison-card good">
+                    <div class="card-icon">💚</div>
+                    <h4>Health Reporting</h4>
+                    <p>Reports VM status, extension status, and diagnostics to Azure</p>
+                </div>
+                <div class="comparison-card good">
+                    <div class="card-icon">📦</div>
+                    <h4>Provisioning</h4>
+                    <p>Sets up VM during first boot (hostname, networking, user accounts)</p>
+                </div>
+            </div>
+
+            <h3>Common VM Extensions</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Extension</th>
+                            <th>Purpose</th>
+                            <th>Example Use</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>AADSSHLoginForLinux</strong></td>
+                            <td>Enable Azure AD authentication for SSH</td>
+                            <td>Identity-based login</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CustomScript</strong></td>
+                            <td>Run scripts on VM</td>
+                            <td>Initial configuration, software installation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>OmsAgentForLinux</strong></td>
+                            <td>Azure Monitor / Log Analytics agent</td>
+                            <td>Centralized logging and monitoring</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AzureDiskEncryption</strong></td>
+                            <td>Enable disk encryption</td>
+                            <td>Encrypt OS and data disks</td>
+                        </tr>
+                        <tr>
+                            <td><strong>VMSnapshot</strong></td>
+                            <td>Application-consistent backups</td>
+                            <td>Azure Backup integration</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AzureMonitorLinuxAgent</strong></td>
+                            <td>Next-gen monitoring agent</td>
+                            <td>Metrics, logs, performance data</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>VM Agent and Authentication</h3>
+            <div class="azure-box">
+                <h4>How VM Agent Enables Recovery</h4>
+                <p>When you reset SSH keys through Azure Portal, here's what happens:</p>
+                
+                <div class="process-timeline" style="margin-top: 20px;">
+                    <div class="timeline-item">
+                        <div class="timeline-number">1</div>
+                        <div class="timeline-content">
+                            <p>You submit new SSH key through Azure Portal</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-number">2</div>
+                        <div class="timeline-content">
+                            <p>Azure sends command to VM Agent inside the VM</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-number">3</div>
+                        <div class="timeline-content">
+                            <p>VM Agent (running as root) writes to ~/.ssh/authorized_keys</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-number">4</div>
+                        <div class="timeline-content">
+                            <p>VM Agent reports success back to Azure</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-number">5</div>
+                        <div class="timeline-content">
+                            <p>You can now SSH with new key!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Checking VM Agent Status</h3>
+            <div class="code-block">
+                <div class="code-line"><span class="comment"># Check if VM Agent is running (Linux)</span></div>
+                <div class="code-line"><span class="command">systemctl status walinuxagent</span></div>
+                <div class="code-line"></div>
+                <div class="code-line"><span class="comment"># Check agent version</span></div>
+                <div class="code-line"><span class="command">waagent --version</span></div>
+                <div class="code-line"></div>
+                <div class="code-line"><span class="comment"># View agent logs</span></div>
+                <div class="code-line"><span class="command">tail -f /var/log/waagent.log</span></div>
+                <div class="code-line"></div>
+                <div class="code-line"><span class="comment"># Check from Azure CLI</span></div>
+                <div class="code-line"><span class="command">az vm get-instance-view --resource-group myRG --name myVM \</span></div>
+                <div class="code-line">  --query "instanceView.vmAgent"</div>
+            </div>
+
+            <div class="warning-box">
+                <strong>What if VM Agent is broken?</strong>
+                <p>If VM Agent fails:</p>
+                <ul style="margin-top: 10px;">
+                    <li>You can't reset passwords from Azure Portal</li>
+                    <li>Extensions won't install/update</li>
+                    <li>Run Command won't work</li>
+                    <li>You'll need Serial Console or disk surgery for recovery</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>Always monitor VM Agent health in production!</strong></p>
+            </div>
+        </section>
+
+        <!-- Images Section -->
+        <section id="images" class="section">
+            <h2>📦 VM Images and Golden Images</h2>
+            
+            <div class="layman-box">
+                <h3>The Cookie Cutter Analogy</h3>
+                <p>Imagine baking cookies:</p>
+                <ul>
+                    <li><strong>Bad way:</strong> Manually shape each cookie by hand (slow, inconsistent)</li>
+                    <li><strong>Good way:</strong> Use a cookie cutter – make a perfect template, stamp out identical cookies</li>
+                </ul>
+                <p style="margin-top: 15px;">VM images are like cookie cutters. You create ONE perfect VM configuration (the "golden image"), then create hundreds of identical VMs from it instantly.</p>
+            </div>
+
+            <h3>Image Types in Azure</h3>
+            <div class="comparison-grid">
+                <div class="comparison-card neutral">
+                    <div class="card-icon">🏪</div>
+                    <h4>Marketplace Images</h4>
+                    <span class="badge modern">Public</span>
+                    <p style="margin-top: 15px;">Pre-built images from Microsoft and partners</p>
+                    <p><strong>Examples:</strong> Ubuntu 22.04, Windows Server 2022, RHEL</p>
+                    <p><strong>Use when:</strong> Starting fresh, standard configurations</p>
+                </div>
+
+                <div class="comparison-card good">
+                    <div class="card-icon">🎖️</div>
+                    <h4>Golden Images</h4>
+                    <span class="badge modern">Custom</span>
+                    <p style="margin-top: 15px;">Your customized, pre-configured images</p>
+                    <p><strong>Contains:</strong> Your apps, configs, security hardening</p>
+                    <p><strong>Use when:</strong> Deploying 10+ similar VMs</p>
+                </div>
+
+                <div class="comparison-card good">
+                    <div class="card-icon">📸</div>
+                    <h4>Snapshots</h4>
+                    <span class="badge legacy">Backup</span>
+                    <p style="margin-top: 15px;">Point-in-time copy of a disk</p>
+                    <p><strong>Contains:</strong> Exact state including data</p>
+                    <p><strong>Use when:</strong> Backups, disaster recovery</p>
+                </div>
+
+                <div class="comparison-card good">
+                    <div class="card-icon">🎨</div>
+                    <h4>Azure Compute Gallery</h4>
+                    <span class="badge modern">Enterprise</span>
+                    <p style="margin-top: 15px;">Centralized image repository with versioning</p>
+                    <p><strong>Contains:</strong> Managed golden images across regions</p>
+                    <p><strong>Use when:</strong> Multi-region, multi-team deployments</p>
+                </div>
+            </div>
+
+            <h3>Creating a Golden Image</h3>
+            <div class="process-timeline">
+                <div class="timeline-item">
+                    <div class="timeline-number">1</div>
+                    <div class="timeline-content">
+                        <h4>Create Template VM</h4>
+                        <p>Deploy VM from marketplace image, configure it perfectly:</p>
+                        <ul>
+                            <li>Install required software</li>
+                            <li>Apply security hardening</li>
+                            <li>Configure monitoring agents</li>
+                            <li>Set up networking</li>
+                            <li>Remove sensitive data</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">2</div>
+                    <div class="timeline-content">
+                        <h4>Generalize the VM</h4>
+                        <p>Remove machine-specific data (hostname, SSH keys, etc.)</p>
+                        <div class="code-block" style="margin-top: 10px;">
+                            <div class="code-line"><span class="comment"># Linux: Deprovision VM</span></div>
+                            <div class="code-line"><span class="command">sudo waagent -deprovision+user -force</span></div>
+                            <div class="code-line"></div>
+                            <div class="code-line"><span class="comment"># This removes:</span></div>
+                            <div class="code-line"># - SSH host keys</div>
+                            <div class="code-line"># - User accounts created by waagent</div>
+                            <div class="code-line"># - Cached network configs</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">3</div>
+                    <div class="timeline-content">
+                        <h4>Deallocate and Generalize</h4>
+                        <div class="code-block">
+                            <div class="code-line"><span class="command">az vm deallocate --resource-group myRG --name templateVM</span></div>
+                            <div class="code-line"><span class="command">az vm generalize --resource-group myRG --name templateVM</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">4</div>
+                    <div class="timeline-content">
+                        <h4>Create Image</h4>
+                        <div class="code-block">
+                            <div class="code-line"><span class="command">az image create \</span></div>
+                            <div class="code-line">  --resource-group myRG \</div>
+                            <div class="code-line">  --name myGoldenImage \</div>
+                            <div class="code-line">  --source templateVM</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">5</div>
+                    <div class="timeline-content">
+                        <h4>Deploy VMs from Image</h4>
+                        <div class="code-block">
+                            <div class="code-line"><span class="command">az vm create \</span></div>
+                            <div class="code-line">  --resource-group prodRG \</div>
+                            <div class="code-line">  --name prodVM01 \</div>
+                            <div class="code-line">  --image myGoldenImage \</div>
+                            <div class="code-line">  --ssh-key-value "$(cat ~/.ssh/id_rsa.pub)"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Image Building Tools</h3>
+            <div class="accordion">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Azure Image Builder</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="azure-box">
+                            <h4>Managed service for building VM images</h4>
+                            <p>Azure Image Builder automates the image creation pipeline:</p>
+                            <ul>
+                                <li>Declarative templates (JSON)</li>
+                                <li>Built-in integration with Azure Compute Gallery</li>
+                                <li>Automatic cleanup of temp resources</li>
+                                <li>Multi-region distribution</li>
+                            </ul>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-line"><span class="comment"># Example Image Builder template</span></div>
+                            <div class="code-line">{</div>
+                            <div class="code-line">  "type": "Microsoft.VirtualMachineImages/imageTemplates",</div>
+                            <div class="code-line">  "source": {</div>
+                            <div class="code-line">    "type": "PlatformImage",</div>
+                            <div class="code-line">    "publisher": "Canonical",</div>
+                            <div class="code-line">    "offer": "0001-com-ubuntu-server-jammy",</div>
+                            <div class="code-line">    "sku": "22_04-lts"</div>
+                            <div class="code-line">  },</div>
+                            <div class="code-line">  "customize": [</div>
+                            <div class="code-line">    { "type": "Shell", "inline": ["apt-get update", "apt-get install -y nginx"] }</div>
+                            <div class="code-line">  ]</div>
+                            <div class="code-line">}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Packer (HashiCorp)</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="layman-box">
+                            <h4>The Industry Standard</h4>
+                            <p>Packer is like a universal image builder – works with Azure, AWS, GCP, VMware, etc. Write config once, build images for multiple platforms.</p>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-line"><span class="comment"># Example Packer template (HCL)</span></div>
+                            <div class="code-line">source "azure-arm" "ubuntu" {</div>
+                            <div class="code-line">  tenant_id       = "YOUR_TENANT_ID"</div>
+                            <div class="code-line">  subscription_id = "YOUR_SUBSCRIPTION_ID"</div>
+                            <div class="code-line">  </div>
+                            <div class="code-line">  os_type         = "Linux"</div>
+                            <div class="code-line">  image_publisher = "Canonical"</div>
+                            <div class="code-line">  image_offer     = "0001-com-ubuntu-server-jammy"</div>
+                            <div class="code-line">  image_sku       = "22_04-lts"</div>
+                            <div class="code-line">}</div>
+                            <div class="code-line"></div>
+                            <div class="code-line">build {</div>
+                            <div class="code-line">  sources = ["source.azure-arm.ubuntu"]</div>
+                            <div class="code-line">  </div>
+                            <div class="code-line">  provisioner "shell" {</div>
+                            <div class="code-line">    inline = [</div>
+                            <div class="code-line">      "apt-get update",</div>
+                            <div class="code-line">      "apt-get install -y docker.io"</div>
+                            <div class="code-line">    ]</div>
+                            <div class="code-line">  }</div>
+                            <div class="code-line">}</div>
+                        </div>
+
+                        <p style="margin-top: 15px;"><strong>Pros:</strong> Multi-cloud, widely adopted, flexible</p>
+                        <p><strong>Cons:</strong> Need to manage Packer installation and auth</p>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Other Image Tools</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Tool</th>
+                                        <th>Use Case</th>
+                                        <th>Best For</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Ansible</strong></td>
+                                        <td>Configuration management + image building</td>
+                                        <td>Teams already using Ansible</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Terraform</strong></td>
+                                        <td>Provision VMs from images (not build images)</td>
+                                        <td>Infrastructure as Code deployments</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Cloud-init</strong></td>
+                                        <td>Bootstrap VMs at first boot</td>
+                                        <td>Simple initial configuration</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Docker + VM</strong></td>
+                                        <td>Container-focused workloads</td>
+                                        <td>Modern app deployments</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Golden Image Best Practices</h3>
+            <div class="comparison-grid">
+                <div class="comparison-card good">
+                    <h4>✅ DO</h4>
+                    <ul>
+                        <li>Version your images (app-v1.0.0)</li>
+                        <li>Document what's in each image</li>
+                        <li>Automate build process</li>
+                        <li>Test images before production</li>
+                        <li>Rebuild regularly (security patches)</li>
+                        <li>Remove secrets before capturing</li>
+                    </ul>
+                </div>
+                <div class="comparison-card bad">
+                    <h4>❌ DON'T</h4>
+                    <ul>
+                        <li>Store secrets in images</li>
+                        <li>Keep a single image forever</li>
+                        <li>Include environment-specific configs</li>
+                        <li>Skip generalization step</li>
+                        <li>Build images manually</li>
+                        <li>Forget to document changes</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Best Practices Section -->
+        <section id="best-practices" class="section">
+            <h2>🎯 Authentication Best Practices</h2>
+            
+            <h3>Security Maturity Model</h3>
+            <div class="diagram-container">
+                <div class="process-timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-number">1</div>
+                        <div class="timeline-content">
+                            <h4>Level 1: Basic (Small Projects)</h4>
+                            <span class="badge security-medium">Security: Medium</span>
+                            <ul>
+                                <li>SSH keys instead of passwords</li>
+                                <li>Ed25519 or RSA 4096 keys</li>
+                                <li>No public SSH without firewall rules</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-number">2</div>
+                        <div class="timeline-content">
+                            <h4>Level 2: Intermediate (Team Projects)</h4>
+                            <span class="badge security-high">Security: High</span>
+                            <ul>
+                                <li>Azure Bastion for private network access</li>
+                                <li>Just-In-Time VM access</li>
+                                <li>Key rotation policy (90 days)</li>
+                                <li>Audit logging enabled</li>
+                                <li>VMs in private subnets</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-number">3</div>
+                        <div class="timeline-content">
+                            <h4>Level 3: Advanced (Enterprise)</h4>
+                            <span class="badge security-high">Security: Very High</span>
+                            <ul>
+                                <li>Identity-based SSH (Azure AD)</li>
+                                <li>Ephemeral certificates (5-15 min lifetime)</li>
+                                <li>Zero public IPs (all via Bastion/VPN)</li>
+                                <li>Conditional access policies + MFA</li>
+                                <li>Session recording</li>
+                                <li>Immutable infrastructure (replace, don't fix)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Quick Decision Guide</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Your Situation</th>
+                            <th>Recommended Approach</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Personal learning project (1-5 VMs)</td>
+                            <td>SSH keys + Public IP with NSG restrictions</td>
+                        </tr>
+                        <tr>
+                            <td>Small startup (5-20 VMs)</td>
+                            <td>SSH keys + Azure Bastion + Private VNet</td>
+                        </tr>
+                        <tr>
+                            <td>Growing company (20-100 VMs)</td>
+                            <td>Azure AD SSH + Bastion + JIT Access</td>
+                        </tr>
+                        <tr>
+                            <td>Enterprise (100+ VMs)</td>
+                            <td>Ephemeral certificates + Zero Trust + Immutable infra</td>
+                        </tr>
+                        <tr>
+                            <td>High-security / Compliance</td>
+                            <td>Certificate-based + Session recording + No public access</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Common Mistakes to Avoid</h3>
+            <div class="comparison-grid">
+                <div class="comparison-card" style="border-color: var(--danger);">
+                    <div class="card-icon">🚨</div>
+                    <h4>Exposing SSH to 0.0.0.0/0</h4>
+                    <p>Allowing SSH from anywhere = constant brute-force attacks</p>
+                    <p style="margin-top: 10px;"><strong>Fix:</strong> Use Azure Bastion or restrict to known IPs</p>
+                </div>
+                <div class="comparison-card" style="border-color: var(--danger);">
+                    <div class="card-icon">🔑</div>
+                    <h4>Sharing Private Keys</h4>
+                    <p>Emailing SSH private keys defeats the whole purpose</p>
+                    <p style="margin-top: 10px;"><strong>Fix:</strong> Each person generates their own key pair</p>
+                </div>
+                <div class="comparison-card" style="border-color: var(--danger);">
+                    <div class="card-icon">📅</div>
+                    <h4>Never Rotating Keys</h4>
+                    <p>SSH keys used for years = high risk if compromised</p>
+                    <p style="margin-top: 10px;"><strong>Fix:</strong> Rotate keys quarterly or use certificates</p>
+                </div>
+                <div class="comparison-card" style="border-color: var(--danger);">
+                    <div class="card-icon">💾</div>
+                    <h4>Keys in Source Control</h4>
+                    <p>Accidentally committing private keys to Git repos</p>
+                    <p style="margin-top: 10px;"><strong>Fix:</strong> Use .gitignore, never commit .ssh/</p>
+                </div>
+            </div>
+
+            <h3>The Modern Cloud VM Access Philosophy</h3>
+            <div class="layman-box">
+                <h4>From Permanent Access to Temporary Access</h4>
+                <p><strong>Old mindset:</strong> "I need permanent access to this server"</p>
+                <p><strong>New mindset:</strong> "I need temporary access when needed, for specific tasks"</p>
+                
+                <p style="margin-top: 20px;"><strong>Old infrastructure:</strong> Servers are pets (named, cared for, fixed when broken)</p>
+                <p><strong>New infrastructure:</strong> Servers are cattle (numbered, replaceable, rebuilt from templates)</p>
+
+                <p style="margin-top: 20px;">The goal isn't just better authentication – it's designing systems where you rarely need to SSH at all.</p>
+            </div>
+
+            <h3>Implementation Checklist</h3>
+            <div class="code-block" style="background: rgba(74, 222, 128, 0.1);">
+                <div class="code-line">☐ Disable password authentication</div>
+                <div class="code-line">☐ Use Ed25519 or RSA 4096 keys</div>
+                <div class="code-line">☐ Deploy VMs in private subnets</div>
+                <div class="code-line">☐ Implement Azure Bastion</div>
+                <div class="code-line">☐ Enable Just-In-Time access</div>
+                <div class="code-line">☐ Configure Azure AD login extension</div>
+                <div class="code-line">☐ Assign RBAC roles appropriately</div>
+                <div class="code-line">☐ Enable Azure Monitor / Log Analytics</div>
+                <div class="code-line">☐ Set up audit logging</div>
+                <div class="code-line">☐ Create golden images</div>
+                <div class="code-line">☐ Automate VM provisioning</div>
+                <div class="code-line">☐ Document key rotation policy</div>
+                <div class="code-line">☐ Train team on security practices</div>
+                <div class="code-line">☐ Implement multi-factor authentication</div>
+                <div class="code-line">☐ Regular security audits</div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p style="font-size: 1.2em; margin-bottom: 10px;">🔐 <strong>VM Authentication Complete Guide</strong></p>
+        <p>From SSH Keys to Identity-Based Authentication – Azure Security Explained</p>
+        <p style="margin-top: 20px; opacity: 0.7;">Master cloud VM security, one authentication method at a time</p>
+    </footer>
+
+    <div class="scroll-top" onclick="scrollToTop()">
+        ↑
+    </div>
+
+    <script>
+        // Scroll to section
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Scroll to top
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Show/hide scroll to top button
+        window.addEventListener('scroll', () => {
+            const scrollTop = document.querySelector('.scroll-top');
+            if (window.pageYOffset > 300) {
+                scrollTop.classList.add('visible');
+            } else {
+                scrollTop.classList.remove('visible');
+            }
+        });
+
+        // Accordion functionality
+        function toggleAccordion(header) {
+            const item = header.parentElement;
+            const wasActive = item.classList.contains('active');
+            
+            // Close all accordions
+            document.querySelectorAll('.accordion-item').forEach(acc => {
+                acc.classList.remove('active');
+            });
+            
+            // Open clicked accordion if it wasn't active
+            if (!wasActive) {
+                item.classList.add('active');
+            }
+        }
+
+        // Add copy button to code blocks
+        document.querySelectorAll('.code-block').forEach(block => {
+            const copyBtn = document.createElement('button');
+            copyBtn.textContent = 'Copy';
+            copyBtn.style.cssText = `
+                position: absolute;
+                bottom: 10px;
+                right: 10px;
+                padding: 5px 15px;
+                background: var(--azure-blue);
+                border: none;
+                border-radius: 4px;
+                color: white;
+                cursor: pointer;
+                font-size: 0.9em;
+                opacity: 0.7;
+                transition: opacity 0.3s;
+            `;
+            
+            copyBtn.addEventListener('click', () => {
+                const text = block.textContent.replace('Copy', '').replace('Terminal', '').trim();
+                navigator.clipboard.writeText(text);
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                }, 2000);
+            });
+            
+            copyBtn.addEventListener('mouseenter', () => {
+                copyBtn.style.opacity = '1';
+            });
+            
+            copyBtn.addEventListener('mouseleave', () => {
+                copyBtn.style.opacity = '0.7';
+            });
+            
+            block.style.position = 'relative';
+            block.style.paddingBottom = '50px';
+            block.appendChild(copyBtn);
+        });
+
+        // Console easter egg
+        console.log('%c🔐 VM Authentication Guide', 'color: #0078d4; font-size: 24px; font-weight: bold;');
+        console.log('%cFrom SSH Keys to Cloud-Native Identity', 'color: #50e6ff; font-size: 14px;');
+        console.log('%cSecure your cloud infrastructure like a pro', 'color: #4ade80; font-size: 12px;');
+    </script>
+</body>
+</html>
